@@ -1,0 +1,109 @@
+using UnityEngine;
+
+public class AutoAimBot : MonoBehaviour
+
+{
+
+    public float aimRange = 100f;  // Range to detect enemies
+
+    public LayerMask enemyLayer;   // Assign 'Enemy' layer in the inspector
+
+    public Transform playerCamera; // Assign the player's camera transform
+
+    public GameObject bulletPrefab; // Bullet to instantiate (optional)
+
+    void Update()
+
+    {
+
+        if (Input.GetButtonDown("Fire1")) // Left Click or Controller Fire Button
+
+        {
+
+            Transform target = FindNearestEnemy();
+
+            if (target != null)
+
+            {
+
+                AimAtTarget(target);
+
+                Shoot(target); // Ensure shot lands perfectly
+
+            }
+
+        }
+
+    }
+
+    Transform FindNearestEnemy()
+
+    {
+
+        Collider[] enemies = Physics.OverlapSphere(transform.position, aimRange, enemyLayer);
+
+        Transform closestEnemy = null;
+
+        float closestDistance = Mathf.Infinity;
+
+        foreach (Collider enemy in enemies)
+
+        {
+
+            float distance = Vector3.Distance(transform.position, enemy.transform.position);
+
+            if (distance < closestDistance)
+
+            {
+
+                closestDistance = distance;
+
+                closestEnemy = enemy.transform;
+
+            }
+
+        }
+
+        return closestEnemy;
+
+    }
+
+    void AimAtTarget(Transform target)
+
+    {
+
+        Vector3 direction = (target.position - playerCamera.position).normalized;
+
+        playerCamera.forward = direction; // Instantly snaps aim to target
+
+    }
+
+    void Shoot(Transform target)
+
+    {
+
+        // Simulate a perfect shot using a direct raycast
+
+        RaycastHit hit;
+
+        if (Physics.Raycast(playerCamera.position, playerCamera.forward, out hit, aimRange, enemyLayer))
+
+        {
+
+            if (hit.collider.CompareTag("Enemy"))
+
+            {
+
+                Debug.Log("Hit: " + hit.collider.name);
+
+                // Apply damage (Assuming enemy has a Health script)
+
+                hit.collider.GetComponent<EnemyHealth>()?.TakeDamage(100);
+
+            }
+
+        }
+
+    }
+
+}
