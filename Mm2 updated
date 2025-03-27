@@ -3,7 +3,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
    Name = "mm2 ðŸ”ª ",
    Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
-   LoadingTitle = "mm2 ðŸ”ª ",
+   LoadingTitle = "mm2 🔪”ª ",
    LoadingSubtitle = "by pixelatedpanda69",
    Theme = "Default", -- Check https://docs.sirius.menu/rayfield/configuration/themes
 
@@ -34,10 +34,10 @@ local Window = Rayfield:CreateWindow({
    }
 })
 
-local MainTab = Window:CreateTab("Home", nil) -- Title, Image
+local MainTab = Window:MakeTab("Home", nil) -- Title, Image
 local MainSection = Tab:CreateSection("Main")
 
-local Toggle = MainTab:CreateToggle({
+local Toggle = MainTab:MakeToggle({
    Name = "sherif",
    CurrentValue = false,
    Flag = "Toggle1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
@@ -109,7 +109,7 @@ end)
    end,
 })
 
-local Toggle = MainTab:CreateToggle({
+local Toggle = MainTab:MakeToggle({
    Name = "all esp",
    CurrentValue = false,
    Flag = "Toggle1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
@@ -260,7 +260,7 @@ handleSheriffDeath()
    end,
 })
 
-local Toggle = MainTab:CreateToggle({
+local Toggle = MainTab:MakeToggle({
    Name = "dodge",
    CurrentValue = false,
    Flag = "Toggle1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
