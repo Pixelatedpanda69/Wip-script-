@@ -1,0 +1,117 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage") -- Useful for server communication
+
+local localPlayer = Players.LocalPlayer
+local mouse = localPlayer:GetMouse()
+local camera = workspace.CurrentCamera
+
+-- Configuration
+local FIRE_INPUT = Enum.UserInputType.MouseButton1 -- Left mouse button
+local AIM_SENSITIVITY_MULTIPLIER = 0.5 -- Adjust for aim precision
+local MAX_AIM_DISTANCE = 500 -- Maximum distance for auto-aim
+
+-- Variables
+local isAiming = false -- You'll likely have a separate aiming state in your game
+local isFiring = false
+
+-- Function to handle firing
+local function fireWeapon()
+	if isFiring then return end -- Prevent rapid firing
+
+	isFiring = true
+
+	-- Perform raycast to find potential targets
+	local rayOrigin = camera.CFrame.Position
+	local rayDirection = camera.CFrame.LookVector
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterDescendantsInstances = {localPlayer.Character} -- Ignore the player's own character
+	raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+	local raycastResult = workspace:Raycast(rayOrigin, rayDirection * MAX_AIM_DISTANCE, raycastParams)
+
+	if raycastResult and raycastResult.Instance then
+		local hitPart = raycastResult.Instance
+		local hitModel = hitPart:FindFirstAncestorOfClass("Model")
+		local humanoid = hitModel and hitModel:FindFirstChildOfClass("Humanoid")
+
+		if humanoid and humanoid.Health > 0 then
+			local head = hitModel:FindFirstChild("Head")
+
+			if head then
+				-- Calculate the direction to the head
+				local headPosition = head.Position
+				local directionToHead = (headPosition - rayOrigin).Unit
+
+				-- Adjust the camera's CFrame to aim at the head
+				local targetCF = CFrame.lookAt(rayOrigin, headPosition)
+				local currentCF = camera.CFrame
+
+				-- Smoothly interpolate the camera rotation (optional, but makes it less jarring)
+				local alpha = 0.2 -- Adjust for smoothness
+				local newCF = currentCF:Lerp(targetCF, alpha)
+
+				-- Apply the new rotation (only the rotation, keep the position)
+				camera.CFrame = CFrame.new(currentCF.Position) * newCF.Rotation
+
+				-- You would then send information to the server about the hit
+				print("Attempting to hit:", hitModel.Name, "in the head")
+				-- Example of sending info to the server (you'll need a RemoteEvent)
+				-- ReplicatedStorage.FireWeaponEvent:FireServer(raycastResult.Position, head)
+			else
+				-- If no head is found, just use the initial hit point
+				print("Attempting to hit:", hitModel.Name, "at:", raycastResult.Position)
+				-- ReplicatedStorage.FireWeaponEvent:FireServer(raycastResult.Position, hitPart)
+			end
+		else
+			-- Hit something else without a humanoid
+			print("Hit:", hitPart.Name, "at:", raycastResult.Position)
+			-- ReplicatedStorage.FireWeaponEvent:FireServer(raycastResult.Position, hitPart)
+		end
+	else
+		-- Nothing hit
+		print("Missed")
+		-- ReplicatedStorage.FireWeaponEvent:FireServer(rayOrigin + rayDirection * MAX_AIM_DISTANCE, nil)
+	end
+
+	-- Reset firing state after a short delay
+	task.wait(0.1) -- Adjust fire rate
+	isFiring = false
+end
+
+-- Input handling for firing
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+	if gameProcessedEvent then return end -- Don't process input if the game already handled it (e.g., typing in chat)
+
+	if input.UserInputType == FIRE_INPUT and isAiming then -- Only auto-aim when aiming (optional)
+		fireWeapon()
+	elseif input.UserInputType == FIRE_INPUT and not isAiming then -- Basic fire without auto-aim
+		fireWeapon() -- You might want different behavior when not aiming
+	end
+end)
+
+-- Example of how you might handle aiming (you'll need to implement your aiming logic)
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+	if gameProcessedEvent then return end
+	if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Example: Right mouse button to aim
+		isAiming = true
+		print("Aiming started")
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessedEvent)
+	if gameProcessedEvent then return end
+	if input.UserInputType == Enum.UserInputType.MouseButton2 then
+		isAiming = false
+		print("Aiming ended")
+	end
+end)
+
+-- Optional: Adjust camera sensitivity when aiming
+RunService.RenderStepped:Connect(function()
+	if isAiming then
+		mouse.Sensitivity = 1 / AIM_SENSITIVITY_MULTIPLIER
+	else
+		mouse.Sensitivity = 1
+	end
+end)
