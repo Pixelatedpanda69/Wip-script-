@@ -1,0 +1,113 @@
+--// Variables
+local Player = game.Players.LocalPlayer
+local Mouse = Player:GetMouse()
+local Camera = game.Workspace.CurrentCamera
+local ESPEnabled = false
+local AimbotEnabled = false
+
+--// GUI Creation
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = Player:WaitForChild("PlayerGui")
+ScreenGui.Name = "FPSGui"
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 200, 0, 300)
+MainFrame.Position = UDim2.new(0, 10, 0, 10)
+MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+MainFrame.BackgroundTransparency = 0.5
+MainFrame.Parent = ScreenGui
+
+local AimbotButton = Instance.new("TextButton")
+AimbotButton.Size = UDim2.new(0, 180, 0, 50)
+AimbotButton.Position = UDim2.new(0, 10, 0, 10)
+AimbotButton.Text = "Toggle Aimbot"
+AimbotButton.Parent = MainFrame
+
+local ESPButton = Instance.new("TextButton")
+ESPButton.Size = UDim2.new(0, 180, 0, 50)
+ESPButton.Position = UDim2.new(0, 10, 0, 70)
+ESPButton.Text = "Toggle ESP"
+ESPButton.Parent = MainFrame
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(0, 180, 0, 30)
+StatusLabel.Position = UDim2.new(0, 10, 0, 130)
+StatusLabel.Text = "Aimbot: OFF | ESP: OFF"
+StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Parent = MainFrame
+
+--// Aimbot Toggle Function
+AimbotButton.MouseButton1Click:Connect(function()
+    AimbotEnabled = not AimbotEnabled
+    if AimbotEnabled then
+        StatusLabel.Text = "Aimbot: ON | ESP: " .. (ESPEnabled and "ON" or "OFF")
+    else
+        StatusLabel.Text = "Aimbot: OFF | ESP: " .. (ESPEnabled and "ON" or "OFF")
+    end
+end)
+
+--// ESP Toggle Function
+ESPButton.MouseButton1Click:Connect(function()
+    ESPEnabled = not ESPEnabled
+    if ESPEnabled then
+        StatusLabel.Text = "Aimbot: " .. (AimbotEnabled and "ON" or "OFF") .. " | ESP: ON"
+    else
+        StatusLabel.Text = "Aimbot: " .. (AimbotEnabled and "ON" or "OFF") .. " | ESP: OFF"
+    end
+end)
+
+--// Aimbot Functionality
+local function AimbotTarget()
+    if AimbotEnabled then
+        local closestEnemy = nil
+        local shortestDistance = math.huge
+        for _, enemy in pairs(game.Workspace:GetChildren()) do
+            if enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("Head") then
+                local dist = (Camera.CFrame.Position - enemy.Head.Position).magnitude
+                if dist < shortestDistance then
+                    shortestDistance = dist
+                    closestEnemy = enemy
+                end
+            end
+        end
+        if closestEnemy then
+            local targetPosition = closestEnemy.Head.Position
+            local direction = (targetPosition - Camera.CFrame.Position).unit
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPosition)
+        end
+    end
+end
+
+--// ESP Functionality
+local function ESP()
+    if ESPEnabled then
+        for _, enemy in pairs(game.Workspace:GetChildren()) do
+            if enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("Head") then
+                local espPart = Instance.new("Part")
+                espPart.Size = Vector3.new(1, 1, 1)
+                espPart.Shape = Enum.PartType.Ball
+                espPart.Anchored = true
+                espPart.CanCollide = false
+                espPart.Position = enemy.Head.Position + Vector3.new(0, 2, 0)
+                espPart.Color = Color3.fromRGB(255, 0, 0)
+                espPart.Parent = enemy
+            end
+        end
+    else
+        -- Remove ESP parts when disabled
+        for _, obj in pairs(game.Workspace:GetChildren()) do
+            if obj:IsA("Part") and obj.Parent:FindFirstChild("Humanoid") then
+                obj:Destroy()
+            end
+        end
+    end
+end
+
+--// Main Loop
+game:GetService("RunService").Heartbeat:Connect(function()
+    if AimbotEnabled then
+        AimbotTarget()
+    end
+    ESP()
+end)
