@@ -35,7 +35,7 @@ local Window = Rayfield:CreateWindow({
 })
 
 local MainTab = Window:CreateTab("Home", nil) -- Title, Image
-local Section = Tab:CreateSection("Main")
+local MainSection = Tab:CreateSection("Main")
 
 local Toggle = MainTab:CreateToggle({
    Name = "sherif",
