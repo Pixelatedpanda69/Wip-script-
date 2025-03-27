@@ -1,0 +1,71 @@
+-- Variables
+local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local comboEnabled = false
+
+-- Create GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player.PlayerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 200, 0, 300)
+mainFrame.Position = UDim2.new(0, 20, 0, 20)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.Parent = screenGui
+
+local aimbotToggleButton = Instance.new("TextButton")
+aimbotToggleButton.Size = UDim2.new(0, 180, 0, 50)
+aimbotToggleButton.Position = UDim2.new(0, 10, 0, 50)
+aimbotToggleButton.Text = "Enable Combo Automation"
+aimbotToggleButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+aimbotToggleButton.Parent = mainFrame
+
+local aimbotStatusLabel = Instance.new("TextLabel")
+aimbotStatusLabel.Size = UDim2.new(0, 180, 0, 30)
+aimbotStatusLabel.Position = UDim2.new(0, 10, 0, 10)
+aimbotStatusLabel.Text = "Combo Disabled"
+aimbotStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+aimbotStatusLabel.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+aimbotStatusLabel.Parent = mainFrame
+
+-- Function to toggle combo automation
+local function toggleComboAutomation()
+    comboEnabled = not comboEnabled
+    if comboEnabled then
+        aimbotStatusLabel.Text = "Combo Enabled"
+        aimbotToggleButton.Text = "Disable Combo Automation"
+        startComboSequence()
+    else
+        aimbotStatusLabel.Text = "Combo Disabled"
+        aimbotToggleButton.Text = "Enable Combo Automation"
+    end
+end
+
+-- Connect the toggle button
+aimbotToggleButton.MouseButton1Click:Connect(toggleComboAutomation)
+
+-- Function to simulate a combo sequence (example)
+local function startComboSequence()
+    if comboEnabled then
+        -- Simulate the first move (punch)
+        char.Humanoid:MoveTo(char.HumanoidRootPart.Position + Vector3.new(5, 0, 0))
+        wait(0.5) -- wait for 0.5 seconds before next move
+        
+        -- Simulate the second move (kick)
+        -- Add your specific combo moves here
+        char.Humanoid:MoveTo(char.HumanoidRootPart.Position + Vector3.new(0, 0, 5))
+        wait(0.5) 
+        
+        -- Continue with other moves, add custom logic
+        print("Combo Completed!")
+    end
+end
+
+-- Main loop to continually check combo enabled status
+while true do
+    wait(1)
+    if comboEnabled then
+        -- Ensure combo sequence runs only when enabled
+        startComboSequence()
+    end
+end
