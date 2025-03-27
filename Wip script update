@@ -1,0 +1,96 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+public class AutoAimBot : MonoBehaviour
+{
+    public float aimRange = 100f;  // Range to detect enemies
+    public LayerMask enemyLayer;   // Assign 'Enemy' layer in the inspector
+    public Transform playerCamera; // Assign the player's camera transform
+    public GameObject bulletPrefab; // Bullet to instantiate (optional)
+
+    [Header("UI Elements")]
+    public GameObject aimbotMenu; // Assign the panel that contains UI buttons
+    public Button toggleMenuButton; // Assign button to open/close menu
+    public Button enableAimbotButton; // Assign button to enable aimbot
+    public Text aimbotStatusText; // UI Text to show status
+
+    private bool isAimbotEnabled = false;
+    private bool isMenuOpen = false;
+
+    void Start()
+    {
+        // Ensure UI elements are set
+        if (aimbotMenu) aimbotMenu.SetActive(false);
+        if (aimbotStatusText) aimbotStatusText.text = "";
+
+        // Add button listeners
+        if (toggleMenuButton) toggleMenuButton.onClick.AddListener(ToggleMenu);
+        if (enableAimbotButton) enableAimbotButton.onClick.AddListener(ToggleAimbot);
+    }
+
+    void Update()
+    {
+        if (isAimbotEnabled && Input.GetButtonDown("Fire1")) // Left Click or Tap
+        {
+            Transform target = FindNearestEnemy();
+            if (target != null)
+            {
+                AimAtTarget(target);
+                Shoot(target);
+            }
+        }
+    }
+
+    // Find nearest enemy
+    Transform FindNearestEnemy()
+    {
+        Collider[] enemies = Physics.OverlapSphere(transform.position, aimRange, enemyLayer);
+        Transform closestEnemy = null;
+        float closestDistance = Mathf.Infinity;
+        foreach (Collider enemy in enemies)
+        {
+            float distance = Vector3.Distance(transform.position, enemy.transform.position);
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestEnemy = enemy.transform;
+            }
+        }
+        return closestEnemy;
+    }
+
+    // Aim at target
+    void AimAtTarget(Transform target)
+    {
+        Vector3 direction = (target.position - playerCamera.position).normalized;
+        playerCamera.forward = direction;
+    }
+
+    // Shoot at target
+    void Shoot(Transform target)
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(playerCamera.position, playerCamera.forward, out hit, aimRange, enemyLayer))
+        {
+            if (hit.collider.CompareTag("Enemy"))
+            {
+                Debug.Log("Hit: " + hit.collider.name);
+                hit.collider.GetComponent<EnemyHealth>()?.TakeDamage(100);
+            }
+        }
+    }
+
+    // Toggle the menu visibility
+    public void ToggleMenu()
+    {
+        isMenuOpen = !isMenuOpen;
+        aimbotMenu.SetActive(isMenuOpen);
+    }
+
+    // Enable/Disable Aimbot
+    public void ToggleAimbot()
+    {
+        isAimbotEnabled = !isAimbotEnabled;
+        aimbotStatusText.text = isAimbotEnabled ? "Aimbot Enabled" : "";
+    }
+}
