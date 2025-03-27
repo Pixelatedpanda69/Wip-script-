@@ -1,0 +1,148 @@
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local playerGui = player:WaitForChild("PlayerGui")
+local screenGui = Instance.new("ScreenGui")
+local mainFrame = Instance.new("Frame")
+local toggleButton = Instance.new("TextButton")
+local aimbotEnabledText = Instance.new("TextLabel")
+local espFolder = Instance.new("Folder")
+local aimbotToggle = false
+local guiOpen = false
+local espEnabled = true
+
+screenGui.Parent = playerGui
+screenGui.Name = "FPS_GUI"
+
+-- Set up the clean GUI frame
+mainFrame.Size = UDim2.new(0.2, 0, 0.2, 0)
+mainFrame.Position = UDim2.new(0.4, 0, 0.4, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
+
+-- Add the toggle button to open/close the GUI
+toggleButton.Size = UDim2.new(0, 100, 0, 40)
+toggleButton.Position = UDim2.new(0.4, 0, 0.8, 0)
+toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Text = "Toggle Menu"
+toggleButton.Parent = screenGui
+
+-- Add aimbot enabled label
+aimbotEnabledText.Size = UDim2.new(0, 200, 0, 50)
+aimbotEnabledText.Position = UDim2.new(0.8, 0, 0, 0)
+aimbotEnabledText.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+aimbotEnabledText.TextColor3 = Color3.fromRGB(255, 0, 0)
+aimbotEnabledText.Text = "Aimbot Disabled"
+aimbotEnabledText.Visible = false
+aimbotEnabledText.Parent = screenGui
+
+-- ESP (Enemy detection)
+espFolder.Name = "ESP_Folder"
+espFolder.Parent = player
+
+-- Toggle GUI visibility
+toggleButton.MouseButton1Click:Connect(function()
+    guiOpen = not guiOpen
+    mainFrame.Visible = guiOpen
+end)
+
+-- Toggle aimbot system
+local aimbotButton = Instance.new("TextButton")
+aimbotButton.Size = UDim2.new(0, 100, 0, 40)
+aimbotButton.Position = UDim2.new(0.5, 0, 0.5, 0)
+aimbotButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+aimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+aimbotButton.Text = "Toggle Aimbot"
+aimbotButton.Parent = mainFrame
+
+aimbotButton.MouseButton1Click:Connect(function()
+    aimbotToggle = not aimbotToggle
+    if aimbotToggle then
+        aimbotEnabledText.Text = "Aimbot Enabled"
+        aimbotEnabledText.Visible = true
+    else
+        aimbotEnabledText.Text = "Aimbot Disabled"
+        aimbotEnabledText.Visible = false
+    end
+end)
+
+-- Aimbot System
+local function getClosestEnemy()
+    local closestEnemy = nil
+    local shortestDistance = math.huge
+    for _, enemy in pairs(game.Players:GetPlayers()) do
+        if enemy ~= player and enemy.Character and enemy.Character:FindFirstChild("Head") then
+            local dist = (mouse.Hit.p - enemy.Character.Head.Position).Magnitude
+            if dist < shortestDistance then
+                closestEnemy = enemy
+                shortestDistance = dist
+            end
+        end
+    end
+    return closestEnemy
+end
+
+-- Auto-aim system
+local function aimAtEnemy(enemyHead)
+    if enemyHead then
+        local aimAt = enemyHead.Position
+        local direction = (aimAt - mouse.Hit.p).unit
+        mouse.Hit = CFrame.new(mouse.Hit.p, aimAt)  -- Set the mouse direction towards the enemy
+    end
+end
+
+-- Continuous Aimbot
+game:GetService("RunService").Heartbeat:Connect(function()
+    if aimbotToggle then
+        local closestEnemy = getClosestEnemy()
+        if closestEnemy then
+            local enemyHead = closestEnemy.Character:FindFirstChild("Head")
+            if enemyHead then
+                aimAtEnemy(enemyHead)
+            end
+        end
+    end
+end)
+
+-- ESP System: Draw boxes around enemies
+local function drawESP(enemy)
+    if enemy.Character and enemy.Character:FindFirstChild("Head") then
+        local head = enemy.Character.Head
+        local espBox = Instance.new("BillboardGui")
+        espBox.Size = UDim2.new(0, 50, 0, 50)
+        espBox.Adornee = head
+        espBox.BackgroundTransparency = 1
+        espBox.TextLabel = Instance.new("TextLabel")
+        espBox.TextLabel.Size = UDim2.new(1, 0, 1, 0)
+        espBox.TextLabel.BackgroundTransparency = 1
+        espBox.TextLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        espBox.TextLabel.Text = enemy.Name
+        espBox.Parent = head
+    end
+end
+
+-- Detect enemies and add ESP
+game:GetService("RunService").Heartbeat:Connect(function()
+    if espEnabled then
+        for _, enemy in pairs(game.Players:GetPlayers()) do
+            if enemy ~= player and enemy.Character and enemy.Character:FindFirstChild("Head") then
+                drawESP(enemy)
+            end
+        end
+    end
+end)
+
+-- Ensure the GUI and ESP remain after death
+player.CharacterAdded:Connect(function()
+    -- Rebuild the GUI upon respawn
+    if not screenGui.Parent then
+        screenGui.Parent = playerGui
+    end
+end)
+
+-- Disable ESP when the player dies
+player.Character:WaitForChild("Humanoid").Died:Connect(function()
+    espFolder:ClearAllChildren() -- Clear all ESP elements on death
+end)
