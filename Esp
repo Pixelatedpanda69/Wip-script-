@@ -1,0 +1,71 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local localPlayer = Players.LocalPlayer
+
+local function createHighlight(player, text)
+	if not player or player == localPlayer then return end
+	local character = player.Character
+	if not character or not character:FindFirstChild("Head") then return nil end
+
+	-- Create BillboardGui
+	local billboardGui = Instance.new("BillboardGui")
+	billboardGui.Name = "PlayerHighlightGUI"
+	billboardGui.Adornee = character:FindFirstChild("Head")
+	billboardGui.Size = UDim2.new(2, 0, 0.5, 0) -- Adjust size as needed
+	billboardGui.AlwaysOnTop = true
+	billboardGui.StudsOffset = Vector3.new(0, 2, 0) -- Adjust offset above head
+
+	-- Create TextLabel
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Name = "HighlightTextLabel"
+	nameLabel.Size = UDim2.new(1, 0, 1, 0)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.TextColor3 = Color3.fromRGB(255, 255, 0) -- Yellow text color (you can change this)
+	nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+	nameLabel.TextStrokeTransparency = 0
+	nameLabel.Font = Enum.Font.SourceSansBold
+	nameLabel.TextScaled = true
+	nameLabel.Text = text
+	nameLabel.Parent = billboardGui
+
+	billboardGui.Parent = character
+	return billboardGui
+end
+
+local function removeHighlight(player)
+	if player and player.Character then
+		local highlight = player.Character:FindFirstChild("PlayerHighlightGUI")
+		if highlight then
+			highlight:Destroy()
+		end
+	end
+end
+
+-- Example Usage:
+
+-- To highlight a specific player with the text "Target":
+local targetPlayerName = "SomePlayerName" -- Replace with the actual player's name
+local targetPlayer = Players:FindFirstChild(targetPlayerName)
+if targetPlayer then
+	createHighlight(targetPlayer, "Target")
+end
+
+-- To remove the highlight from that player later:
+-- if targetPlayer then
+-- 	removeHighlight(targetPlayer)
+-- end
+
+-- You can also loop through all players and highlight them with their name:
+-- RunService.Heartbeat:Connect(function()
+-- 	for _, player in Players:GetPlayers() do
+-- 		if player ~= localPlayer and not player.Character:FindFirstChild("PlayerHighlightGUI") then
+-- 			createHighlight(player, player.DisplayName)
+-- 		end
+-- 	end
+-- end)
+
+-- To remove all highlights:
+-- for _, player in Players:GetPlayers() do
+-- 	removeHighlight(player)
+-- end
