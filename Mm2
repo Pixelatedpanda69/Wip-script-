@@ -1,0 +1,182 @@
+-- Place this script in `StarterPlayer -> StarterPlayerScripts`
+
+local Player = game.Players.LocalPlayer
+local Mouse = Player:GetMouse()
+local ReplicatedStorage = game.ReplicatedStorage
+local UIS = game:GetService("UserInputService")
+local ESPEnabled = false
+local AimbotEnabled = false
+local UltraInstinctEnabled = false
+local MurdererESPEnabled = false
+local SheriffESPEnabled = false
+local GunDropESPEnabled = false
+local MenuVisible = false
+
+local function CreateGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = Player:WaitForChild("PlayerGui")
+    
+    local menuButton = Instance.new("TextButton")
+    menuButton.Text = "Open Menu"
+    menuButton.Size = UDim2.new(0, 200, 0, 50)
+    menuButton.Position = UDim2.new(0, 10, 0, 10)
+    menuButton.Parent = screenGui
+    menuButton.MouseButton1Click:Connect(function()
+        MenuVisible = not MenuVisible
+        -- Toggle visibility of menu (which contains other buttons)
+    end)
+    
+    local aimbotButton = Instance.new("TextButton")
+    aimbotButton.Text = "Aimbot: OFF"
+    aimbotButton.Size = UDim2.new(0, 200, 0, 50)
+    aimbotButton.Position = UDim2.new(0, 10, 0, 70)
+    aimbotButton.Parent = screenGui
+    aimbotButton.MouseButton1Click:Connect(function()
+        AimbotEnabled = not AimbotEnabled
+        aimbotButton.Text = "Aimbot: " .. (AimbotEnabled and "ON" or "OFF")
+    end)
+    
+    -- Similar buttons for Ultra Instinct, ESP, MurdererESP, SheriffESP, GunDropESP...
+end
+
+local function ShootToMurderer()
+    -- Only for Sheriff and if the player has the gun
+    if Player.Team.Name == "Sheriff" then
+        local murderer = nil
+        for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
+            if otherPlayer.Team.Name == "Murderer" then
+                murderer = otherPlayer.Character
+                break
+            end
+        end
+        
+        if murderer then
+            -- Aim and shoot at murderer (auto aim at murderer)
+            local gun = Player.Character:FindFirstChild("Gun")  -- Assume the gun is in the character
+            if gun then
+                -- Fire gun at murderer (simplified for this example)
+                -- Add shooting logic here (like raycasting or projectile)
+            end
+        end
+    end
+end
+
+local function AimbotForMurderer()
+    -- If the player is murderer, the knife automatically targets the closest player
+    if Player.Team.Name == "Murderer" then
+        local closestPlayer = nil
+        local minDist = math.huge
+        for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
+            if otherPlayer.Team.Name ~= "Murderer" then
+                local dist = (Player.Character.HumanoidRootPart.Position - otherPlayer.Character.HumanoidRootPart.Position).Magnitude
+                if dist < minDist then
+                    minDist = dist
+                    closestPlayer = otherPlayer
+                end
+            end
+        end
+        
+        if closestPlayer then
+            -- After throwing knife, it will automatically hit closest player
+            -- Add logic to throw knife towards the closest player
+        end
+    end
+end
+
+local function UltraInstinctMovement()
+    -- Detects if a shot or knife is coming at the player and dodges it
+    local character = Player.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    
+    if not humanoid then return end
+    
+    -- Example: If a bullet is shot at the player, dodge
+    if UltraInstinctEnabled then
+        local ray = Ray.new(character.HumanoidRootPart.Position, Mouse.Hit.p - character.HumanoidRootPart.Position)
+        local part, position = workspace:FindPartOnRay(ray, character)
+        
+        if part and part:IsDescendantOf(game.Workspace) then
+            -- Move character in a random direction to dodge
+            humanoid:Move(Vector3.new(math.random(-5, 5), 0, math.random(-5, 5)))
+        end
+    end
+end
+
+local function ESP()
+    -- Displays ESP (basic, can be enhanced)
+    if ESPEnabled then
+        for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
+            if otherPlayer.Character then
+                local character = otherPlayer.Character
+                local head = character:FindFirstChild("Head")
+                if head then
+                    local espTag = Instance.new("BillboardGui")
+                    espTag.Adornee = head
+                    espTag.Size = UDim2.new(0, 100, 0, 50)
+                    espTag.StudsOffset = Vector3.new(0, 3, 0)
+                    espTag.Parent = character
+                    local textLabel = Instance.new("TextLabel")
+                    textLabel.Text = otherPlayer.Name
+                    textLabel.Size = UDim2.new(1, 0, 1, 0)
+                    textLabel.BackgroundTransparency = 1
+                    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    textLabel.TextStrokeTransparency = 0.5
+                    textLabel.Parent = espTag
+                end
+            end
+        end
+    end
+end
+
+local function MurdererESP()
+    -- Highlight murderer with red and show distance
+    if MurdererESPEnabled then
+        for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
+            if otherPlayer.Team.Name == "Murderer" and otherPlayer.Character then
+                local character = otherPlayer.Character
+                local head = character:FindFirstChild("Head")
+                if head then
+                    local distance = (Player.Character.HumanoidRootPart.Position - head.Position).Magnitude
+                    -- Highlight murderer and show distance (basic version)
+                    local espTag = Instance.new("BillboardGui")
+                    espTag.Adornee = head
+                    espTag.Size = UDim2.new(0, 100, 0, 50)
+                    espTag.StudsOffset = Vector3.new(0, 3, 0)
+                    espTag.Parent = character
+                    local textLabel = Instance.new("TextLabel")
+                    textLabel.Text = "Murderer: " .. math.floor(distance) .. " studs"
+                    textLabel.Size = UDim2.new(1, 0, 1, 0)
+                    textLabel.BackgroundTransparency = 1
+                    textLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+                    textLabel.TextStrokeTransparency = 0.5
+                    textLabel.Parent = espTag
+                end
+            end
+        end
+    end
+end
+
+-- Additional ESP features for Sheriff, GunDrop, etc.
+
+-- Main update loop
+game:GetService("RunService").Heartbeat:Connect(function()
+    if AimbotEnabled then
+        AimbotForMurderer()
+    end
+    
+    if UltraInstinctEnabled then
+        UltraInstinctMovement()
+    end
+    
+    if ESPEnabled then
+        ESP()
+    end
+    
+    if MurdererESPEnabled then
+        MurdererESP()
+    end
+    
+    -- More features like gun drop ESP can be added here
+end)
+
+CreateGUI()  -- Initializes the GUI and buttons
