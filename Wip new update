@@ -1,75 +1,98 @@
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local Camera = game.Workspace.CurrentCamera
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local playerGui = player:WaitForChild("PlayerGui")
+local screenGui = Instance.new("ScreenGui")
+local mainFrame = Instance.new("Frame")
+local toggleButton = Instance.new("TextButton")
+local aimbotEnabledText = Instance.new("TextLabel")
+local espFolder = Instance.new("Folder")
+local aimbotToggle = false
+local guiOpen = false
 
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:FindFirstChildOfClass("Humanoid")
-local rootPart = character:WaitForChild("HumanoidRootPart")
+screenGui.Parent = playerGui
+screenGui.Name = "FPS_GUI"
 
-local aimbotEnabled = false
-local menuOpen = false
+-- Set up the clean GUI frame
+mainFrame.Size = UDim2.new(0.2, 0, 0.2, 0)
+mainFrame.Position = UDim2.new(0.4, 0, 0.4, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
 
--- UI Elements
-local screenGui = game.Players.LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("ScreenGui")
-local menuButton = screenGui:WaitForChild("CapybaraButton") -- ImageButton
-local menuFrame = screenGui:WaitForChild("MenuFrame") -- Frame for aimbot toggle
-local aimbotButton = menuFrame:WaitForChild("AimbotToggleButton") -- Button to enable aimbot
-local statusText = screenGui:WaitForChild("AimbotStatus") -- TextLabel
+-- Add the toggle button to open/close the GUI
+toggleButton.Size = UDim2.new(0, 100, 0, 40)
+toggleButton.Position = UDim2.new(0.4, 0, 0.8, 0)
+toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Text = "Toggle Menu"
+toggleButton.Parent = screenGui
 
--- Toggle Menu
-menuButton.MouseButton1Click:Connect(function()
-    menuOpen = not menuOpen
-    menuFrame.Visible = menuOpen
+-- Add aimbot enabled label
+aimbotEnabledText.Size = UDim2.new(0, 200, 0, 50)
+aimbotEnabledText.Position = UDim2.new(0.8, 0, 0, 0)
+aimbotEnabledText.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+aimbotEnabledText.TextColor3 = Color3.fromRGB(255, 0, 0)
+aimbotEnabledText.Text = "Aimbot Disabled"
+aimbotEnabledText.Visible = false
+aimbotEnabledText.Parent = screenGui
+
+-- ESP (Enemy detection)
+espFolder.Name = "ESP_Folder"
+espFolder.Parent = player
+
+-- Toggle GUI visibility
+toggleButton.MouseButton1Click:Connect(function()
+    guiOpen = not guiOpen
+    mainFrame.Visible = guiOpen
 end)
 
--- Toggle Aimbot
+-- Toggle aimbot system
+local aimbotButton = Instance.new("TextButton")
+aimbotButton.Size = UDim2.new(0, 100, 0, 40)
+aimbotButton.Position = UDim2.new(0.5, 0, 0.5, 0)
+aimbotButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+aimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+aimbotButton.Text = "Toggle Aimbot"
+aimbotButton.Parent = mainFrame
+
 aimbotButton.MouseButton1Click:Connect(function()
-    aimbotEnabled = not aimbotEnabled
-    statusText.Text = aimbotEnabled and "Aimbot Enabled" or ""
-    aimbotButton.Text = aimbotEnabled and "Disable Aimbot" or "Enable Aimbot"
+    aimbotToggle = not aimbotToggle
+    if aimbotToggle then
+        aimbotEnabledText.Text = "Aimbot Enabled"
+        aimbotEnabledText.Visible = true
+    else
+        aimbotEnabledText.Text = "Aimbot Disabled"
+        aimbotEnabledText.Visible = false
+    end
 end)
 
--- Find Nearest Enemy
-local function getNearestEnemy()
-    local nearestEnemy = nil
+-- Aimbot System
+local function getClosestEnemy()
+    local closestEnemy = nil
     local shortestDistance = math.huge
-
-    for _, enemy in pairs(game.Workspace.Enemies:GetChildren()) do
-        if enemy:FindFirstChild("HumanoidRootPart") then
-            local distance = (enemy.HumanoidRootPart.Position - rootPart.Position).magnitude
-            if distance < shortestDistance then
-                shortestDistance = distance
-                nearestEnemy = enemy
+    for _, enemy in pairs(game.Players:GetPlayers()) do
+        if enemy ~= player and enemy.Character and enemy.Character:FindFirstChild("Head") then
+            local dist = (mouse.Hit.p - enemy.Character.Head.Position).Magnitude
+            if dist < shortestDistance then
+                closestEnemy = enemy
+                shortestDistance = dist
             end
         end
     end
-
-    return nearestEnemy
+    return closestEnemy
 end
 
--- Aimbot Function
-RunService.RenderStepped:Connect(function()
-    if aimbotEnabled then
-        local target = getNearestEnemy()
-        if target then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.HumanoidRootPart.Position)
-        end
-    end
-end)
-
--- Basic FPS Controls
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        if aimbotEnabled then
-            local target = getNearestEnemy()
-            if target then
-                -- Simulate hitting the enemy
-                target:FindFirstChildOfClass("Humanoid"):TakeDamage(100)
-                print("Hit: " .. target.Name)
+-- Auto-aim system
+game:GetService("RunService").Heartbeat:Connect(function()
+    if aimbotToggle then
+        local closestEnemy = getClosestEnemy()
+        if closestEnemy then
+            local enemyHead = closestEnemy.Character:FindFirstChild("Head")
+            if enemyHead then
+                local aimAt = enemyHead.Position
+                local direction = (aimAt - mouse.Hit.p).unit
+                mouse.Hit = CFrame.new(mouse.Hit.p, aimAt)  -- Set the mouse direction towards the enemy
             end
         end
     end
