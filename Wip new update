@@ -8,6 +8,7 @@ local aimbotEnabledText = Instance.new("TextLabel")
 local espFolder = Instance.new("Folder")
 local aimbotToggle = false
 local guiOpen = false
+local espEnabled = true
 
 screenGui.Parent = playerGui
 screenGui.Name = "FPS_GUI"
@@ -84,16 +85,64 @@ local function getClosestEnemy()
 end
 
 -- Auto-aim system
+local function aimAtEnemy(enemyHead)
+    if enemyHead then
+        local aimAt = enemyHead.Position
+        local direction = (aimAt - mouse.Hit.p).unit
+        mouse.Hit = CFrame.new(mouse.Hit.p, aimAt)  -- Set the mouse direction towards the enemy
+    end
+end
+
+-- Continuous Aimbot
 game:GetService("RunService").Heartbeat:Connect(function()
     if aimbotToggle then
         local closestEnemy = getClosestEnemy()
         if closestEnemy then
             local enemyHead = closestEnemy.Character:FindFirstChild("Head")
             if enemyHead then
-                local aimAt = enemyHead.Position
-                local direction = (aimAt - mouse.Hit.p).unit
-                mouse.Hit = CFrame.new(mouse.Hit.p, aimAt)  -- Set the mouse direction towards the enemy
+                aimAtEnemy(enemyHead)
             end
         end
     end
+end)
+
+-- ESP System: Draw boxes around enemies
+local function drawESP(enemy)
+    if enemy.Character and enemy.Character:FindFirstChild("Head") then
+        local head = enemy.Character.Head
+        local espBox = Instance.new("BillboardGui")
+        espBox.Size = UDim2.new(0, 50, 0, 50)
+        espBox.Adornee = head
+        espBox.BackgroundTransparency = 1
+        espBox.TextLabel = Instance.new("TextLabel")
+        espBox.TextLabel.Size = UDim2.new(1, 0, 1, 0)
+        espBox.TextLabel.BackgroundTransparency = 1
+        espBox.TextLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        espBox.TextLabel.Text = enemy.Name
+        espBox.Parent = head
+    end
+end
+
+-- Detect enemies and add ESP
+game:GetService("RunService").Heartbeat:Connect(function()
+    if espEnabled then
+        for _, enemy in pairs(game.Players:GetPlayers()) do
+            if enemy ~= player and enemy.Character and enemy.Character:FindFirstChild("Head") then
+                drawESP(enemy)
+            end
+        end
+    end
+end)
+
+-- Ensure the GUI and ESP remain after death
+player.CharacterAdded:Connect(function()
+    -- Rebuild the GUI upon respawn
+    if not screenGui.Parent then
+        screenGui.Parent = playerGui
+    end
+end)
+
+-- Disable ESP when the player dies
+player.Character:WaitForChild("Humanoid").Died:Connect(function()
+    espFolder:ClearAllChildren() -- Clear all ESP elements on death
 end)
